@@ -11,7 +11,7 @@ A static, in-browser tool that turns an AI-generated "fake pixel" image into a p
    solid background.
 3. **Physical sizing**: choose the bead pitch (2.6 mm mini, 5 mm standard, or custom). Keep the snapped grid,
    or fit it within a maximum width × height in cm or in beads. The aspect ratio is kept and the longest side
-   is scaled to fit, so the result never exceeds either limit. Small images are scaled up to fill the limit.
+   is scaled to fit, so the result never exceeds either limit. Images are never scaled up: a grid that already fits keeps its bead count.
    The tool shows the finished size and how many pegboards you need (52×52, 29×29, 50×50, 26×26, or custom).
    **Defaults:** 2.6 mm beads, fit within 13 × 13 cm (at most 50 × 50 beads), 52 × 52 boards.
 4. **Template output**: the pattern shows a colour code in every cell, board boundary lines, a line every

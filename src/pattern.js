@@ -131,7 +131,8 @@ export function limitColors(cells, entries, maxColors) {
 /**
  * Work out the bead grid from the snapped source size and the user's sizing choice.
  * mode: "original" | "cm" | "beads". maxW/maxH are the bounding box (either may be empty);
- * the grid keeps the source aspect ratio and fits inside the box.
+ * the grid keeps the source aspect ratio and fits inside the box. It is only ever
+ * downscaled: a grid that already fits keeps its bead count.
  */
 export function computeGrid({ srcW, srcH, mode, maxW, maxH, pitchMm }) {
   let cols = srcW, rows = srcH;
@@ -140,7 +141,7 @@ export function computeGrid({ srcW, srcH, mode, maxW, maxH, pitchMm }) {
     const bw = maxW > 0 ? toBeads(maxW) : Infinity;
     const bh = maxH > 0 ? toBeads(maxH) : Infinity;
     if (Number.isFinite(bw) || Number.isFinite(bh)) {
-      const scale = Math.min(bw / srcW, bh / srcH);
+      const scale = Math.min(1, bw / srcW, bh / srcH);
       cols = Math.max(1, Math.floor(srcW * scale + 1e-6));
       rows = Math.max(1, Math.floor(srcH * scale + 1e-6));
     }
