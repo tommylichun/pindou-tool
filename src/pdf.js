@@ -2,11 +2,11 @@ import { drawGrid, drawLegend, legendMetrics, summaryLines, FONT } from "./rende
 
 // Pages are drawn on a canvas in millimetres and placed at exact page size, so
 // CJK text works without embedding fonts and 1:1 pages keep their real scale.
-const PX_PER_MM = 10;
-const PAGE = { w: 210, h: 297 };
-const M = 10;
+export const PX_PER_MM = 10;
+export const PAGE = { w: 210, h: 297 };
+export const M = 10;
 
-function newPage() {
+export function newPage() {
   const canvas = document.createElement("canvas");
   canvas.width = PAGE.w * PX_PER_MM;
   canvas.height = PAGE.h * PX_PER_MM;
@@ -17,7 +17,7 @@ function newPage() {
   return { canvas, ctx };
 }
 
-function header(ctx, title, lines) {
+export function header(ctx, title, lines) {
   ctx.fillStyle = "#1f2328";
   ctx.textBaseline = "top";
   ctx.font = `700 5px ${FONT}`;
@@ -28,7 +28,7 @@ function header(ctx, title, lines) {
   return M + 7 + lines.length * 4.2 + 2;
 }
 
-function footer(ctx, text, page) {
+export function footer(ctx, text, page) {
   ctx.font = `400 2.6px ${FONT}`;
   ctx.fillStyle = "#8c959f";
   ctx.textBaseline = "bottom";
@@ -40,7 +40,7 @@ function footer(ctx, text, page) {
 }
 
 /** 50 mm calibration ruler: check it with a real ruler after printing at 100%. */
-function ruler(ctx, x, y) {
+export function ruler(ctx, x, y) {
   ctx.strokeStyle = "#1f2328";
   ctx.lineWidth = 0.25;
   ctx.beginPath();

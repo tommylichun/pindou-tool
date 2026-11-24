@@ -50,6 +50,8 @@ To print the 1:1 PDF, choose **Actual size / 100%** in the print dialog (not "Fi
 | `palettes/` | palette data files + `index.json` registry |
 | `scripts/build-palette.py`, `scripts/sources/` | raw palette sources and the generator |
 | `vendor/jspdf.umd.min.js` | jsPDF 2.5.2 (MIT) |
+| `simulator.html`, `src/figure/` | articulated keychain figure simulator (see below) |
+| `src/exact-scale.js` | fast path for clean pixel art that is already upscaled by an integer factor |
 
 ## Palettes
 
@@ -74,6 +76,47 @@ Hex values are screen approximations of physical beads, and public charts disagr
 ```
 
 Run `python3 scripts/build-palette.py` to regenerate the MARD files from `scripts/sources/`.
+
+## Keychain figure simulator · 挂件模拟器
+
+`simulator.html` designs articulated 拼豆 keychain figures: separate bead plates (head, body, arms, legs,
+tail…) joined by jump rings or rivets so they swing when the keychain is shaken.
+
+1. **Design**: start from a template (flying squirrel, black cat, chibi) or describe the figure to the AI
+   helper. Each part has a size in beads (2.6 mm, ≤ 50×50 = 13 cm), a placeholder shape and colour, the part it
+   hangs from, its own hole and the parent's hole (1-based column, row), a swing limit and a connector type.
+2. **Simulate**: 2D rigid-body physics (mm units, gravity, pin joints with angle limits, friction and
+   damping, a short ball chain to the keyring). Drag empty space to move the keyring, drag a part to flick it,
+   or press Shake / Hard shake. Plates are drawn at true relative scale.
+3. **Artwork**: "Import art" on a part runs the image through the snapper and MARD 221 mapping, trims the
+   background margin, removes the background and fits the result inside the part's bead box (never
+   upscaled). Holes move with the resize and snap onto the nearest bead.
+4. **Export**: per-part PNG and 1:1 PDF (the same exporters as the pattern maker), an assembly sheet PNG,
+   and one PDF holding the assembly sheet plus a 1:1 page per part with the holes marked. Save/Load keeps
+   the figure as JSON, and the browser keeps the last figure in `localStorage`.
+
+| File | Purpose |
+| --- | --- |
+| `src/figure/model.js` | part model, placeholder shapes, validation, JSON save/load |
+| `src/figure/templates.js` | starter figures |
+| `src/figure/ai-design.js` | rule-based "describe → parts" helper and the LLM hook |
+| `src/figure/physics.js` | sequential-impulse solver: joints, limits, chain, shake, mouse drag |
+| `src/figure/view.js` | simulator canvas renderer |
+| `src/figure/assembly.js` | assembly sheet, hardware counts, figure PDF |
+| `src/figure/figure-app.js`, `src/figure/figure.css` | UI |
+
+**LLM hook.** The AI helper uses rule-based proportions (species, colours, tail/arms/legs, head width or total
+height in cm). To plug in a model, define a function before the app loads (or any time before clicking
+"Suggest parts"):
+
+```js
+window.figureDesignLLM = async (description, { partKinds, shapes, maxBeads, pitchMm, example }) => {
+  // call your model and return figure JSON in the Save/Load format (`example` is the squirrel)
+  return { name: "…", pitchMm: 2.6, chain: { links: 3, linkMm: 7 }, parts: [/* … */] };
+};
+```
+
+With "LLM hook first" ticked, the hook's result is loaded; if the hook is missing, the rules are used.
 
 ## Snapper port notes
 
