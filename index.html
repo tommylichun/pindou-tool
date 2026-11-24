@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>拼豆图纸生成器 · Bead Pattern Maker</title>
+  <link rel="stylesheet" href="src/styles.css" />
+  <script src="vendor/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>拼豆图纸生成器 <span>Bead Pattern Maker</span></h1>
+        <p>AI 像素画 → 网格校正 → 色号映射 → 可打印图纸 · AI pixel art → grid snap → bead colors → printable pattern</p>
+      </div>
+    </div>
+    <div class="export">
+      <button id="btn-png" class="btn" disabled>导出 PNG · Export PNG</button>
+      <button id="btn-pdf-fit" class="btn" disabled>PDF 适应页面 · Fit</button>
+      <button id="btn-pdf-real" class="btn primary" disabled>PDF 1:1 实际尺寸 · Real scale</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <section class="card">
+        <h2><b>1</b> 图片 <span>Image</span></h2>
+        <label id="drop" class="drop">
+          <input id="file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+          <strong>点击或拖入图片</strong>
+          <span>Click or drop an image (PNG / JPG / WebP)</span>
+        </label>
+        <button id="btn-sample" class="link">载入示例 AI 像素图 · Load sample AI image</button>
+      </section>
+
+      <section class="card">
+        <h2><b>2</b> 网格校正 <span>Grid snapping</span></h2>
+        <label class="check"><input id="snap-on" type="checkbox" checked /> 自动对齐像素网格 <em>Snap to pixel grid (Pixel Snapper)</em></label>
+        <div class="row2">
+          <label>像素大小 <em>Pixel size (px)</em>
+            <input id="pixel-size" type="number" min="1" step="0.5" placeholder="自动 auto" />
+          </label>
+          <label>分析色数 <em>Analysis colors</em>
+            <input id="k-colors" type="number" min="2" max="64" value="16" />
+          </label>
+        </div>
+        <p class="hint" id="snap-info">—</p>
+      </section>
+
+      <section class="card">
+        <h2><b>3</b> 色板 <span>Palette</span></h2>
+        <label>品牌色卡 <em>Bead palette</em>
+          <select id="palette"></select>
+        </label>
+        <label>最多颜色 <em>Max colors (0 = 不限 unlimited)</em>
+          <input id="max-colors" type="number" min="0" max="300" value="0" />
+        </label>
+        <label class="check"><input id="remove-bg" type="checkbox" checked /> 去除背景 <em>Remove background (no beads)</em></label>
+        <div class="series" id="series"></div>
+        <details>
+          <summary>排除颜色 Exclude colors <span id="excluded-count"></span></summary>
+          <p class="hint">点击色块排除/恢复 · Click a swatch to exclude / restore</p>
+          <div id="swatches" class="swatches"></div>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2><b>4</b> 尺寸 <span>Size</span></h2>
+        <div class="row2">
+          <label>豆子规格 <em>Bead size</em>
+            <select id="bead">
+              <option value="2.6">2.6 mm 迷你 Mini</option>
+              <option value="5" selected>5 mm 标准 Standard</option>
+              <option value="custom">自定义 Custom</option>
+            </select>
+          </label>
+          <label>间距 mm <em>Pitch (mm)</em>
+            <input id="pitch" type="number" min="1" max="20" step="0.1" value="5" disabled />
+          </label>
+        </div>
+        <div class="seg" role="radiogroup" id="size-mode">
+          <label><input type="radio" name="mode" value="original" checked /><span>原始网格<em>Original</em></span></label>
+          <label><input type="radio" name="mode" value="cm" /><span>物理尺寸<em>Size (cm)</em></span></label>
+          <label><input type="radio" name="mode" value="beads" /><span>豆子数<em>Bead count</em></span></label>
+        </div>
+        <div class="row2" id="target-row">
+          <label>最大宽 <em id="unit-w">Max width</em><input id="target-w" type="number" min="1" step="0.5" /></label>
+          <label>最大高 <em id="unit-h">Max height</em><input id="target-h" type="number" min="1" step="0.5" /></label>
+        </div>
+        <label>拼豆板 <em>Pegboard</em>
+          <select id="board">
+            <option value="29">29 × 29</option>
+            <option value="52">52 × 52</option>
+            <option value="50">50 × 50</option>
+            <option value="26">26 × 26</option>
+            <option value="custom">自定义 Custom</option>
+          </select>
+        </label>
+        <input id="board-custom" type="number" min="5" max="200" value="29" hidden />
+      </section>
+
+      <section class="card">
+        <h2><b>5</b> 显示 <span>Display</span></h2>
+        <label class="check"><input id="show-codes" type="checkbox" checked /> 格内显示色号 <em>Codes in cells</em></label>
+        <label>格子像素 <em>Cell size (preview/PNG)</em>
+          <input id="cell-px" type="range" min="10" max="48" value="26" />
+        </label>
+      </section>
+    </aside>
+
+    <section class="main">
+      <div class="stats" id="stats">
+        <div><span>网格 Grid</span><b id="s-grid">—</b></div>
+        <div><span>成品尺寸 Finished size</span><b id="s-size">—</b></div>
+        <div><span>拼豆板 Boards</span><b id="s-boards">—</b></div>
+        <div><span>颜色 Colors</span><b id="s-colors">—</b></div>
+        <div><span>总豆数 Total beads</span><b id="s-total">—</b></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button data-view="pattern" class="active">图纸 Pattern</button>
+        <button data-view="snapped">校正结果 Snapped</button>
+        <button data-view="original">原图 Original</button>
+        <span id="status" class="status"></span>
+      </div>
+      <div class="viewer" id="viewer">
+        <div class="empty" id="empty">
+          <strong>上传一张 AI 生成的像素画开始</strong>
+          <span>Upload an AI-generated pixel-art image to begin</span>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="foot">
+    网格校正算法移植自 Grid snapping ported from <a href="https://github.com/Hugo-Dz/spritefusion-pixel-snapper" target="_blank" rel="noopener">Sprite Fusion Pixel Snapper</a> (MIT) ·
+    色卡数据 Palette data: <span id="palette-source"></span> · 所有处理均在浏览器本地完成 Everything runs locally in your browser.
+  </footer>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+[
+ {
+  "id": "mard-221",
+  "file": "mard-221.json",
+  "label": "MARD 221色 标准色 · MARD 221 standard",
+  "default": true
+ },
+ {
+  "id": "mard-264",
+  "file": "mard-264.json",
+  "label": "MARD 264色全套装 · MARD 264 full set"
+ }
+]
