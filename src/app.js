@@ -123,19 +123,20 @@ worker.onmessage = (e) => {
   state.snapped = m;
   const { width, height } = state.source.imageData;
   $("snap-info").textContent = `检测像素 ≈ ${m.stepX.toFixed(1)}px · ${width}×${height} → ${m.width}×${m.height} 格 cells`;
-  if (document.querySelector('input[name="mode"]:checked').value === "original") primeTargets();
   recompute();
 };
 
+const DEFAULT_MAX_CM = 13;
+
 function primeTargets() {
-  if (!state.snapped) return;
   const s = readSettings();
   if (s.mode === "cm") {
-    $("target-w").value = ((state.snapped.width * s.pitchMm) / 10).toFixed(1);
-    $("target-h").value = "";
+    $("target-w").value = DEFAULT_MAX_CM;
+    $("target-h").value = DEFAULT_MAX_CM;
   } else if (s.mode === "beads") {
-    $("target-w").value = state.snapped.width;
-    $("target-h").value = "";
+    const n = Math.floor((DEFAULT_MAX_CM * 10) / s.pitchMm + 1e-6);
+    $("target-w").value = n;
+    $("target-h").value = n;
   }
 }
 
@@ -237,7 +238,7 @@ document.querySelectorAll('input[name="mode"]').forEach((r) =>
     recompute();
   }),
 );
-$("target-row").style.display = "none";
+$("target-row").style.display = document.querySelector('input[name="mode"]:checked').value === "original" ? "none" : "";
 
 $("series").addEventListener("click", (e) => {
   const k = e.target.closest(".chip")?.dataset.series;

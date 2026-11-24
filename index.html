@@ -71,34 +71,34 @@
         <div class="row2">
           <label>豆子规格 <em>Bead size</em>
             <select id="bead">
-              <option value="2.6">2.6 mm 迷你 Mini</option>
-              <option value="5" selected>5 mm 标准 Standard</option>
+              <option value="2.6" selected>2.6 mm 迷你 Mini</option>
+              <option value="5">5 mm 标准 Standard</option>
               <option value="custom">自定义 Custom</option>
             </select>
           </label>
           <label>间距 mm <em>Pitch (mm)</em>
-            <input id="pitch" type="number" min="1" max="20" step="0.1" value="5" disabled />
+            <input id="pitch" type="number" min="1" max="20" step="0.1" value="2.6" disabled />
           </label>
         </div>
         <div class="seg" role="radiogroup" id="size-mode">
-          <label><input type="radio" name="mode" value="original" checked /><span>原始网格<em>Original</em></span></label>
-          <label><input type="radio" name="mode" value="cm" /><span>物理尺寸<em>Size (cm)</em></span></label>
+          <label><input type="radio" name="mode" value="original" /><span>原始网格<em>Original</em></span></label>
+          <label><input type="radio" name="mode" value="cm" checked /><span>限定尺寸<em>Fit within cm</em></span></label>
           <label><input type="radio" name="mode" value="beads" /><span>豆子数<em>Bead count</em></span></label>
         </div>
         <div class="row2" id="target-row">
-          <label>最大宽 <em id="unit-w">Max width</em><input id="target-w" type="number" min="1" step="0.5" /></label>
-          <label>最大高 <em id="unit-h">Max height</em><input id="target-h" type="number" min="1" step="0.5" /></label>
+          <label>最大宽 <em id="unit-w">Max width (cm)</em><input id="target-w" type="number" min="1" step="0.5" value="13" /></label>
+          <label>最大高 <em id="unit-h">Max height (cm)</em><input id="target-h" type="number" min="1" step="0.5" value="13" /></label>
         </div>
         <label>拼豆板 <em>Pegboard</em>
           <select id="board">
+            <option value="52" selected>52 × 52</option>
             <option value="29">29 × 29</option>
-            <option value="52">52 × 52</option>
             <option value="50">50 × 50</option>
             <option value="26">26 × 26</option>
             <option value="custom">自定义 Custom</option>
           </select>
         </label>
-        <input id="board-custom" type="number" min="5" max="200" value="29" hidden />
+        <input id="board-custom" type="number" min="5" max="200" value="52" hidden />
       </section>
 
       <section class="card">
