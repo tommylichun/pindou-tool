@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>拼豆挂件模拟器 · Bead Keychain Figure Simulator</title>
+  <link rel="stylesheet" href="src/styles.css" />
+  <link rel="stylesheet" href="src/figure/figure.css" />
+  <script src="vendor/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <h1>拼豆挂件模拟器 <span>Bead Keychain Figure Simulator</span></h1>
+        <p>分件设计 → 关节连接 → 摇晃模拟 → 分件图纸 · Design parts → link joints → shake → per-part templates · <a href="index.html">← 图纸生成器 Pattern maker</a></p>
+      </div>
+    </div>
+    <div class="export">
+      <button id="btn-save" class="btn">保存 JSON · Save</button>
+      <label class="btn">载入 JSON · Load<input id="file-load" type="file" accept="application/json,.json" hidden /></label>
+      <button id="btn-assembly-png" class="btn">装配图 PNG · Assembly</button>
+      <button id="btn-figure-pdf" class="btn primary">全部 PDF · Assembly + parts 1:1</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel">
+      <section class="card">
+        <h2><b>1</b> 设计 <span>Design</span></h2>
+        <label>模板 <em>Starter template</em>
+          <div class="inline">
+            <select id="template"></select>
+            <button id="btn-template" class="btn small">套用 Apply</button>
+          </div>
+        </label>
+        <label>AI 设计助手 <em>AI design helper — describe the figure</em>
+          <textarea id="ai-text" rows="3" placeholder="例如：一只白色小飞鼠，蓝色大尾巴，有小手；头宽 9cm&#10;e.g. black cat with long tail, no arms"></textarea>
+        </label>
+        <div class="inline">
+          <button id="btn-ai" class="btn small primary">生成部件 Suggest parts</button>
+          <label class="check"><input id="ai-llm" type="checkbox" checked /> 优先 LLM <em>LLM hook first</em></label>
+        </div>
+        <p class="hint">LLM hook <code>window.figureDesignLLM</code> <span id="llm-state"></span></p>
+        <p class="hint" id="ai-info">规则引擎：按 Q 版比例推算尺寸与关节 · Rule-based proportions.</p>
+      </section>
+
+      <section class="card">
+        <h2><b>2</b> 部件 <span>Parts</span> <small id="part-count"></small></h2>
+        <p class="hint">尺寸单位为豆 (2.6 mm)，每件 ≤ 50×50 · Sizes in beads, each ≤ 50×50 (13 cm). 孔位 = (列, 行)，从 1 开始 Holes are (col, row), 1-based.</p>
+        <div id="parts"></div>
+        <button id="btn-add" class="btn small">＋ 添加部件 Add part</button>
+      </section>
+
+      <section class="card">
+        <h2><b>3</b> 挂链 <span>Chain</span></h2>
+        <div class="row2">
+          <label>节数 <em>Links</em><input id="chain-links" type="number" min="0" max="8" value="3" /></label>
+          <label>每节 mm <em>Link length</em><input id="chain-len" type="number" min="2" max="20" value="7" /></label>
+        </div>
+      </section>
+    </aside>
+
+    <section class="main">
+      <div class="stats" id="stats">
+        <div><span>部件 Parts</span><b id="s-parts">—</b></div>
+        <div><span>连接件 Hardware</span><b id="s-hw">—</b></div>
+        <div><span>悬挂尺寸 Hanging size</span><b id="s-size">—</b></div>
+        <div><span>颜色 Colors</span><b id="s-colors">—</b></div>
+        <div><span>总豆数 Total beads</span><b id="s-total">—</b></div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button data-view="sim" class="active">模拟 Simulate</button>
+        <button data-view="assembly">装配图 Assembly</button>
+        <span class="toolbar" id="sim-tools">
+          <button id="btn-shake" class="btn small primary">摇一摇 Shake</button>
+          <button id="btn-shake-hard" class="btn small">用力摇 Hard shake</button>
+          <button id="btn-reset" class="btn small">复位 Reset</button>
+          <label class="check"><input id="show-joints" type="checkbox" checked /> 孔位 <em>Holes</em></label>
+          <label class="zoom">缩放 <input id="zoom" type="range" min="1" max="6" step="0.1" value="3" /></label>
+        </span>
+        <span id="status" class="status"></span>
+      </div>
+      <div class="viewer sim-viewer" id="viewer">
+        <canvas id="sim" class="sim"></canvas>
+        <div id="assembly" class="assembly" hidden></div>
+        <p class="sim-hint" id="sim-hint">拖动空白处 = 拿着钥匙圈移动；拖动部件 = 拨动它 · Drag empty space to move the keyring; drag a part to flick it.</p>
+        <ul class="issues" id="issues"></ul>
+      </div>
+    </section>
+  </main>
+  <footer class="foot">
+    物理：刚体 + 销钉关节（限角、阻尼）· Physics: rigid plates + pin joints with angle limits and damping. 图片网格校正使用 Pixel Snapper (MIT) 移植，色号 MARD 221。所有处理均在浏览器本地完成 Everything runs locally.
+  </footer>
+  <script type="module" src="src/figure/figure-app.js"></script>
+</body>
+</html>

@@ -1,1 +1,131 @@
-# pindou-tool
+# 拼豆图纸生成器 · Bead Pattern Maker
+
+A static, in-browser tool that turns an AI-generated "fake pixel" image into a printable
+拼豆 / fuse-bead (Perler, Hama, Artkal, MARD…) pattern.
+
+1. **Grid snapping**: a JavaScript port of [Sprite Fusion Pixel Snapper](https://github.com/Hugo-Dz/spritefusion-pixel-snapper)
+   (MIT) detects the implicit pixel grid of AI pixel art and resamples each cell to one clean pixel.
+2. **Bead colour mapping**: every pixel maps to the nearest bead colour using CIEDE2000 in CIE Lab.
+   The default palette is **MARD 221** (standard A–H + M series). You can exclude single colours or whole
+   series, cap the colour count (the least-used colours fold into their nearest neighbours), and remove a
+   solid background.
+3. **Physical sizing**: choose the bead pitch (2.6 mm mini, 5 mm standard, or custom). Keep the snapped grid,
+   or fit it within a maximum width × height in cm or in beads. The aspect ratio is kept and the longest side
+   is scaled to fit, so the result never exceeds either limit. Images are never scaled up: a grid that already fits keeps its bead count.
+   The tool shows the finished size and how many pegboards you need (52×52, 29×29, 50×50, 26×26, or custom).
+   **Defaults:** 2.6 mm beads, fit within 13 × 13 cm (at most 50 × 50 beads), 52 × 52 boards.
+4. **Template output**: the pattern shows a colour code in every cell, board boundary lines, a line every
+   5 beads, and row/column numbers. The legend lists swatch, code, name and count per colour, plus the total.
+   Export as PNG, a fit-to-page A4 PDF, or a **1:1 real-scale A4 PDF** with one page per pegboard and a
+   50 mm calibration ruler.
+
+Everything runs locally in the browser. There is no build step and nothing is uploaded.
+
+## Run
+
+The app loads palettes with `fetch` and uses an ES-module worker, so serve it over HTTP instead of opening
+the file directly:
+
+```bash
+cd bead-pattern
+python3 -m http.server 8080
+# open http://localhost:8080
+```
+
+Any static file server works (`npx serve .` and so on). Click **载入示例 Load sample** to try the bundled AI
+image in `samples/`.
+
+To print the 1:1 PDF, choose **Actual size / 100%** in the print dialog (not "Fit to page"), then check the
+50 mm ruler at the bottom of each board page.
+
+## Layout
+
+| Path | Purpose |
+| --- | --- |
+| `index.html`, `src/styles.css`, `src/app.js` | UI and wiring |
+| `src/snapper.js`, `src/snap-worker.js` | Pixel Snapper port (runs in a Web Worker) |
+| `src/color.js` | sRGB → Lab, CIEDE2000 |
+| `src/pattern.js` | palette mapping, resampling, background removal, colour limit, sizing and board maths |
+| `src/render.js`, `src/pdf.js` | template drawing (unit-agnostic), PNG and PDF export |
+| `palettes/` | palette data files + `index.json` registry |
+| `scripts/build-palette.py`, `scripts/sources/` | raw palette sources and the generator |
+| `vendor/jspdf.umd.min.js` | jsPDF 2.5.2 (MIT) |
+| `simulator.html`, `src/figure/` | articulated keychain figure simulator (see below) |
+| `src/exact-scale.js` | fast path for clean pixel art that is already upscaled by an integer factor |
+
+## Palettes
+
+| File | Colours | Source |
+| --- | --- | --- |
+| `palettes/mard-221.json` (default) | 221 | [HansBug/pindou-color-data `mard-221-alfonse-doudou`](https://github.com/HansBug/pindou-color-data/tree/main/mard-221-alfonse-doudou) (MIT), checked against that repo's `mard-221-github` set (same 221 codes; 3 colours differ by more than 24/255 in one channel). Chinese names come from the pindoupic MARD chart. |
+| `palettes/mard-264.json` | 264 | [pindoupic MARD 264色全套装](https://www.pindoupic.com/seka/264) (adds the P/Q/R/T/Y extension series) |
+
+Hex values are screen approximations of physical beads, and public charts disagree by a few units.
+
+**Adding a brand** (Artkal, Perler, Hama…): create `palettes/<id>.json` with this shape and register it in
+`palettes/index.json`:
+
+```json
+{
+  "id": "perler-standard", "brand": "Perler",
+  "name": { "zh": "Perler 标准色", "en": "Perler standard" },
+  "source": "https://…",
+  "series": { "P": { "zh": "标准", "en": "Standard" } },
+  "colors": [ { "code": "P01", "hex": "#F1F1F1", "name": "White", "series": "P" } ]
+}
+```
+
+Run `python3 scripts/build-palette.py` to regenerate the MARD files from `scripts/sources/`.
+
+## Keychain figure simulator · 挂件模拟器
+
+`simulator.html` designs articulated 拼豆 keychain figures: separate bead plates (head, body, arms, legs,
+tail…) joined by jump rings or rivets so they swing when the keychain is shaken.
+
+1. **Design**: start from a template (flying squirrel, black cat, chibi) or describe the figure to the AI
+   helper. Each part has a size in beads (2.6 mm, ≤ 50×50 = 13 cm), a placeholder shape and colour, the part it
+   hangs from, its own hole and the parent's hole (1-based column, row), a swing limit and a connector type.
+2. **Simulate**: 2D rigid-body physics (mm units, gravity, pin joints with angle limits, friction and
+   damping, a short ball chain to the keyring). Drag empty space to move the keyring, drag a part to flick it,
+   or press Shake / Hard shake. Plates are drawn at true relative scale.
+3. **Artwork**: "Import art" on a part runs the image through the snapper and MARD 221 mapping, trims the
+   background margin, removes the background and fits the result inside the part's bead box (never
+   upscaled). Holes move with the resize and snap onto the nearest bead.
+4. **Export**: per-part PNG and 1:1 PDF (the same exporters as the pattern maker), an assembly sheet PNG,
+   and one PDF holding the assembly sheet plus a 1:1 page per part with the holes marked. Save/Load keeps
+   the figure as JSON, and the browser keeps the last figure in `localStorage`.
+
+| File | Purpose |
+| --- | --- |
+| `src/figure/model.js` | part model, placeholder shapes, validation, JSON save/load |
+| `src/figure/templates.js` | starter figures |
+| `src/figure/ai-design.js` | rule-based "describe → parts" helper and the LLM hook |
+| `src/figure/physics.js` | sequential-impulse solver: joints, limits, chain, shake, mouse drag |
+| `src/figure/view.js` | simulator canvas renderer |
+| `src/figure/assembly.js` | assembly sheet, hardware counts, figure PDF |
+| `src/figure/figure-app.js`, `src/figure/figure.css` | UI |
+
+**LLM hook.** The AI helper uses rule-based proportions (species, colours, tail/arms/legs, head width or total
+height in cm). To plug in a model, define a function before the app loads (or any time before clicking
+"Suggest parts"):
+
+```js
+window.figureDesignLLM = async (description, { partKinds, shapes, maxBeads, pitchMm, example }) => {
+  // call your model and return figure JSON in the Save/Load format (`example` is the squirrel)
+  return { name: "…", pitchMm: 2.6, chain: { links: 3, linkMm: 7 }, parts: [/* … */] };
+};
+```
+
+With "LLM hook first" ticked, the hook's result is loaded; if the hook is missing, the rules are used.
+
+## Snapper port notes
+
+`src/snapper.js` follows `src/lib.rs` v1.0.0 step for step: k-means++ quantisation, gradient profiles,
+peak-based step estimate, elastic walker, two-axis stabilisation, and mode resampling. The one difference is
+the k-means seeding RNG (mulberry32 instead of ChaCha8). On identical decoded input, the port produced the
+same grid size as the Rust CLI (74×72 for the bundled sample, 189×115 for the upstream `details.png`), with
+97–99 % of pixels within 12/255.
+
+## Licenses
+
+MIT. See `LICENSE` and `THIRD_PARTY_LICENSES.md`.
